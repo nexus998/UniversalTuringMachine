@@ -9,7 +9,11 @@ namespace UniversalTuringMachine
 {
     public class FileLoader
     {
-        string fileToLoad;
-
+        public List<string> LoadTuringInstruction(string fileName)
+        {
+            var lines = File.ReadAllLines(fileName);
+            List<string> lineList = new List<string>(lines);
+            return lineList;
+        }
     }
 }

@@ -15,11 +15,10 @@ namespace UniversalTuringMachine
 
 
 
-            Program p = new Program();
-            p.DoWelcomeScreen();
+            DoWelcomeScreen();
         }
 
-        private void DoWelcomeScreen()
+        public static void DoWelcomeScreen()
         {
             Console.Clear();
             Console.WriteLine();
@@ -43,7 +42,7 @@ namespace UniversalTuringMachine
                 DoWelcomeScreen();
             }
         }
-        void LoadPrograms()
+        static void LoadPrograms()
         {
             for(int i = 0; i < ProgramSettings.GetProgramFunctions().Count; i++)
             {
