@@ -12,34 +12,51 @@ namespace UniversalTuringMachine
         {
             //Initialize needed functions
             var t = new TuringMachineFunction();
-
+            var d = new DelayFunction();
+            var e = new ExitFunction();
 
 
             DoWelcomeScreen();
         }
-
+        static bool correctSelection = false;
         public static void DoWelcomeScreen()
         {
+            correctSelection = false;
             Console.Clear();
             Console.WriteLine();
-            Console.WriteLine("Welcome to a Turing machine simulator! Please select a function by entering the number of the function and pressing enter.");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("TURING MACHINE SIMULATOR");
             Console.WriteLine("(made by Mindaugas Morkunas)");
+            Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine();
 
             LoadPrograms();
-            string input = Console.ReadLine();
-            ProgramFunction selectedFunction = ProgramSettings.GetProgramFunction(int.Parse(input)-1);
-            if(selectedFunction != null)
+
+            while (!correctSelection)
             {
-                Console.Clear();
-                selectedFunction.RunProgram();
-                
-            }
-            else
-            {
-                Console.WriteLine("Command not found. Press any key to try again...");
-                Console.ReadKey();
-                DoWelcomeScreen();
+                var input = Console.ReadKey();
+                char res = '0';
+                try
+                {
+                    string inp = input.Key.ToString();
+                    if (inp.StartsWith("NumPad") || inp.StartsWith("D"))
+                    {
+                        res = inp.Last();
+                    }
+                    var selectedFunction = ProgramSettings.GetProgramFunction(int.Parse(res.ToString()) - 1);
+                    
+                    selectedFunction.RunProgram();
+                    correctSelection = true;
+                    Console.Clear();
+                }
+                catch
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(" - Command not found. Press try again...");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    //Console.ReadKey();
+                    //DoWelcomeScreen();
+                }
             }
         }
         static void LoadPrograms()

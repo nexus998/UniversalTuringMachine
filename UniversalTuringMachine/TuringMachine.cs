@@ -9,41 +9,73 @@ namespace UniversalTuringMachine
 {
     public class TuringMachine
     {
+        string name;
         volatile char[] elements;
         List<string> instructionLines;
-        char currentState = '0';
-        volatile int headerPosition;
+        string currentState = "0";
+        public volatile Header header = new Header();
         bool completed = false;
+        bool paused = false;
+        public volatile string[] currentInstructions;
+        int delay;
 
-        public TuringMachine(List<string> instructions)
+        public TuringMachine(List<string> instructions, string name)
         {
+            paused = false;
+            completed = false;
+            delay = TuringMachineFunction.delay;
+            this.name = name;
             List<string> inst = new List<string>(instructions);
+            inst.RemoveAll(string.IsNullOrWhiteSpace);
             this.elements = inst[1].ToCharArray();
-            headerPosition = int.Parse(inst[0])-1;
-            instructionLines = instructions.Skip(3).ToList();
+            header.SetPosition(int.Parse(inst[0])-1);
+            instructionLines = instructions.Skip(2).ToList();
             for(int i = 0; i < instructionLines.Count; i++)
             {
                 string trimmed = Regex.Replace(instructionLines[i], @"s", "");
                 instructionLines[i] = trimmed;
             }
             instructionLines.RemoveAll(string.IsNullOrWhiteSpace);
-            currentState = '0';
+            currentState = "0";
         }
+
+        public void SetDelay(int value)
+        {
+            delay = value;
+        }
+
+        public string GetName()
+        {
+            return name;
+        }
+
+        //Pausing----------
+        public void TogglePause()
+        {
+            paused = !paused;
+            DoInstructions(FindInstructionsForSymbolAndState(GetSymbolAtPosition(header.GetPosition()), currentState));
+        }
+        public void SetPause(bool value)
+        {
+            paused = value;
+        }
+        public bool GetPaused() => paused;
+        //------------------
 
         public char GetSymbolAtPosition(int position)
         {
             return elements[position];
         }
-        public int GetHeaderPosition() => headerPosition;
+        public int GetHeaderPosition() { return header.GetPosition(); }
 
         public void StartSimulation()
         {
-            DoInstructions(FindInstructionsForSymbolAndState(GetSymbolAtPosition(headerPosition), currentState), headerPosition);
+            DoInstructions(FindInstructionsForSymbolAndState(GetSymbolAtPosition(header.GetPosition()), currentState));
+            currentInstructions = FindInstructionsForSymbolAndState(GetSymbolAtPosition(header.GetPosition()), currentState);
         }
         public void StopSimulation()
         {
             completed = true;
-            TuringMachineFunction.simulationsRunning = false;
         }
         public bool GetCompleted() => completed;
         public char[] GetElementCharArray()
@@ -59,20 +91,16 @@ namespace UniversalTuringMachine
             }
             Console.WriteLine("");
         }
-        public char[] FindInstructionsForSymbolAndState(char symbol, char state)
+        public string[] FindInstructionsForSymbolAndState(char symbol, string state)
         {
-            /*for(int i = 0; i < instructionLines.Count; i++)
-            {
-                Console.WriteLine(instructionLines[i]);
-            }
-            Console.ReadKey();*/
             for(int i = 0; i < instructionLines.Count; i++)
             {
-                if((char)instructionLines[i][0] == (char)state)
+                string[] splitted = instructionLines[i].Split(' ');
+                if(splitted[0] == state)
                 {
-                    if(instructionLines[i].ToCharArray()[2] == symbol)
+                    if(splitted[1] == symbol.ToString())
                     {
-                        return instructionLines[i].ToCharArray();
+                        return splitted;
                     }
                 }
             }
@@ -86,34 +114,65 @@ namespace UniversalTuringMachine
             return null;
         }
 
-        public void DoInstructions(char[] instructionLine, int headerPosition)
+        public void DoInstructions(string[] instructionLine)
         {
-            for (int i = 0; i < instructionLine.Length; i++)
+            if (!GetCompleted())
             {
-                elements[headerPosition] = instructionLine[4];
-                headerPosition = headerPosition + (instructionLine[6] == 'L' ? -1 : 1);
+                if (!GetPaused())
+                {
+                    elements[header.GetPosition()] = instructionLine[2].ToCharArray()[0];
+                    if (instructionLine[3].ToCharArray()[0] == 'L') header.MoveHeaderLeft();
+                    else header.MoveHeaderRight();
 
-                if (instructionLine[8] == 'X')
-                {
-                    StopSimulation();
-                }
-                else
-                {
-                    char[] newInstructions = FindInstructionsForSymbolAndState(GetSymbolAtPosition(headerPosition), instructionLine[8]);
-                    Thread.Sleep(TuringMachineFunction.delay);
-                    if(newInstructions != null) DoInstructions(newInstructions, headerPosition);
+                    if (instructionLine[4].ToCharArray()[0] == 'X')
+                    {
+                        //Console.Clear();
+                        StopSimulation();
+                    }
                     else
                     {
-                        StopSimulation();
-                        Console.WriteLine();
-                        Console.WriteLine("Can not continue the simulation. Press any key to return to the menu...");
-                        Console.ReadKey();
-                        Program.DoWelcomeScreen();
-                        TuringMachineFunction.Reset();
+                        
+                        string[] newInstructions = FindInstructionsForSymbolAndState(GetSymbolAtPosition(header.GetPosition()), instructionLine[4]);
+                        currentInstructions = newInstructions;
+                        Thread.Sleep(TuringMachineFunction.delay);
+                        if (newInstructions != null) DoInstructions(newInstructions);
+                        else
+                        {
+                            StopSimulation();
+                            Console.WriteLine();
+                            Console.WriteLine("Cannot continue the simulation. Press any key to return to the menu...");
+                            Console.ReadKey();
+                            Program.DoWelcomeScreen();
+                            TuringMachineFunction.Reset();
+                        }
                     }
                 }
             }
         }
 
+    }
+    public class Header
+    {
+        volatile int position;
+        public Header()
+        {
+            position = 0;
+        }
+        public int GetPosition()
+        {
+            return position;
+        }
+        public void SetPosition(int value)
+        {
+            position = value;
+        }
+        public void MoveHeaderRight()
+        {
+            position++;
+        }
+        public void MoveHeaderLeft()
+        {
+            position--;
+        }
     }
 }
